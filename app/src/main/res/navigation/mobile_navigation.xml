@@ -21,7 +21,7 @@
 
     <fragment
         android:id="@+id/navigation_dashboard"
-        android:name="com.hackerton.recording.ui.dashboard.DashboardFragment"
+        android:name="com.hackerton.recording.ui.user.DashboardFragment"
         android:label="@string/title_dashboard"
         tools:layout="@layout/fragment_dashboard" />
     <fragment

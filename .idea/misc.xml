@@ -12,6 +12,7 @@
         <entry key="app/src/main/res/drawable/round_home_black_24dp.xml" value="0.32685185185185184" />
         <entry key="app/src/main/res/drawable/selector_item_bg.xml" value="0.34270833333333334" />
         <entry key="app/src/main/res/drawable/solid_color_shape.xml" value="0.34270833333333334" />
+        <entry key="app/src/main/res/font/roboto.xml" value="0.35833333333333334" />
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.27708333333333335" />
         <entry key="app/src/main/res/layout/fragment_create.xml" value="0.1" />
         <entry key="app/src/main/res/layout/fragment_dashboard.xml" value="0.27708333333333335" />

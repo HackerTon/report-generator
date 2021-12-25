@@ -28,8 +28,10 @@ import com.hackerton.recording.R;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Map;
 
 public class HomeFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
+    final private SimpleDateFormat format = new SimpleDateFormat("EEE, MMM d, yyyy");
     private ArrayList<History> historyList;
     private Adapter adapter;
     private SwipeRefreshLayout swipeView;
@@ -39,7 +41,7 @@ public class HomeFragment extends Fragment implements SwipeRefreshLayout.OnRefre
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
         final FloatingActionButton actionButton = view.findViewById(R.id.fab);
-        ObjectAnimator dropBounce = ObjectAnimator.ofFloat(actionButton, "Y", 1500);
+        ObjectAnimator dropBounce = ObjectAnimator.ofFloat(actionButton, "Y", 1000);
         dropBounce.setDuration(700);
         dropBounce.setInterpolator(new BounceInterpolator());
 
@@ -70,7 +72,7 @@ public class HomeFragment extends Fragment implements SwipeRefreshLayout.OnRefre
         });
 
         historyList = new ArrayList<>();
-        refreshHistory();
+        refreshHistory(false);
         adapter = new Adapter(historyList);
         recyclerView.setAdapter(adapter);
 
@@ -85,33 +87,52 @@ public class HomeFragment extends Fragment implements SwipeRefreshLayout.OnRefre
 
     @Override
     public void onRefresh() {
-        FirebaseFirestore.getInstance().collection("history").get().addOnCompleteListener(runnable -> {
-            if (runnable.isSuccessful()) {
-                historyList.clear();
-                for (QueryDocumentSnapshot document : runnable.getResult()) {
-                    Log.i("DATA", document.getData().get("timecode").toString());
-
-                    final Timestamp timestamp = (Timestamp) document.getData().get("timecode");
-                    SimpleDateFormat format = new SimpleDateFormat("EEE, MMM d, yyyy");
-                    historyList.add(new History(format.format(timestamp.toDate()), "DATE"));
-                }
-                adapter.notifyDataSetChanged();
-                swipeView.setRefreshing(false);
-            }
-        });
+        refreshHistory(true);
     }
 
-    public void refreshHistory() {
+    private String tohistString(ArrayList<Map<String, Object>> records) {
+        StringBuilder builder = new StringBuilder();
+
+        for (int i = 0; i != records.size(); i++) {
+            Map<String, Object> record = records.get(i);
+
+            String studentName = record.get("studentName").toString();
+            String studentLevel = record.get("level").toString();
+            String modelName = record.get("modelName").toString();
+            String studentProgress = record.get("progress").toString();
+
+            builder.append(i);
+            builder.append(". ");
+            builder.append(studentName);
+            builder.append(", Level ");
+            builder.append(studentLevel);
+            builder.append(" ");
+            builder.append(modelName);
+            builder.append(" ");
+            builder.append(studentProgress);
+            builder.append(" ");
+
+            builder.append('\n');
+        }
+
+        return builder.toString();
+    }
+
+
+    public void refreshHistory(boolean useswipeView) {
+        historyList.clear();
         FirebaseFirestore.getInstance().collection("history").get().addOnCompleteListener(runnable -> {
             if (runnable.isSuccessful()) {
                 for (QueryDocumentSnapshot document : runnable.getResult()) {
-                    Log.i("DATA", document.getData().get("timecode").toString());
-
                     final Timestamp timestamp = (Timestamp) document.getData().get("timecode");
-                    SimpleDateFormat format = new SimpleDateFormat("EEE, MMM d, yyyy");
-                    historyList.add(new History(format.format(timestamp.toDate()), "DATE"));
-                    adapter.notifyDataSetChanged();
+                    ArrayList<Map<String, Object>> records = (ArrayList<Map<String, Object>>) document.getData().get("record");
+                    historyList.add(new History(format.format(timestamp.toDate()), tohistString(records)));
                 }
+
+                if (useswipeView) {
+                    swipeView.setRefreshing(false);
+                }
+                adapter.notifyDataSetChanged();
             }
         });
     }
