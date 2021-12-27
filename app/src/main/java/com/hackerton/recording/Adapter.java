@@ -1,9 +1,9 @@
 package com.hackerton.recording;
 
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -14,11 +14,13 @@ import com.hackerton.recording.ui.home.History;
 import java.util.ArrayList;
 
 // universal adapter
-public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
+public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder>  {
     final ArrayList<History> list;
+    final View.OnClickListener listener;
 
-    public Adapter(ArrayList<History> list) {
+    public Adapter(ArrayList<History> list, View.OnClickListener listener) {
         this.list = list;
+        this.listener = listener;
     }
 
     @NonNull
@@ -34,20 +36,13 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
         holder.getMtextHistory().setText(list.get(position).getHistory());
     }
 
+
     @Override
     public int getItemCount() {
         return list.size();
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
-        public TextView getMtextDate() {
-            return mtextDate;
-        }
-
-        public TextView getMtextHistory() {
-            return mtextHistory;
-        }
-
         final TextView mtextDate;
         final TextView mtextHistory;
 
@@ -55,6 +50,16 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
             super(itemView);
             mtextDate = itemView.findViewById(R.id.textDate);
             mtextHistory = itemView.findViewById(R.id.textHistory);
+            itemView.setTag(this);
+            itemView.setOnClickListener(listener);
+        }
+
+        public TextView getMtextDate() {
+            return mtextDate;
+        }
+
+        public TextView getMtextHistory() {
+            return mtextHistory;
         }
     }
 }

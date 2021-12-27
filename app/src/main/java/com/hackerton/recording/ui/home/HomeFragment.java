@@ -3,13 +3,15 @@ package com.hackerton.recording.ui.home;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.graphics.Rect;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.BounceInterpolator;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -30,7 +32,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Map;
 
-public class HomeFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
+public class HomeFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener, View.OnClickListener {
     final private SimpleDateFormat format = new SimpleDateFormat("EEE, MMM d, yyyy");
     private ArrayList<History> historyList;
     private Adapter adapter;
@@ -73,7 +75,7 @@ public class HomeFragment extends Fragment implements SwipeRefreshLayout.OnRefre
 
         historyList = new ArrayList<>();
         refreshHistory(false);
-        adapter = new Adapter(historyList);
+        adapter = new Adapter(historyList, this);
         recyclerView.setAdapter(adapter);
 
 
@@ -126,7 +128,7 @@ public class HomeFragment extends Fragment implements SwipeRefreshLayout.OnRefre
                 for (QueryDocumentSnapshot document : runnable.getResult()) {
                     final Timestamp timestamp = (Timestamp) document.getData().get("timecode");
                     ArrayList<Map<String, Object>> records = (ArrayList<Map<String, Object>>) document.getData().get("record");
-                    historyList.add(new History(format.format(timestamp.toDate()), tohistString(records)));
+                    historyList.add(new History(document.getId(), format.format(timestamp.toDate()), tohistString(records)));
                 }
 
                 if (useswipeView) {
@@ -135,5 +137,35 @@ public class HomeFragment extends Fragment implements SwipeRefreshLayout.OnRefre
                 adapter.notifyDataSetChanged();
             }
         });
+    }
+
+    @Override
+    public void onClick(View view) {
+        Adapter.ViewHolder viewHolder = (Adapter.ViewHolder) view.getTag();
+        History thisHist = historyList.get(viewHolder.getAdapterPosition());
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        builder.setMessage("Your message");
+        builder.setCancelable(true);
+        builder.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                FirebaseFirestore.getInstance().collection("history").document(thisHist.getId()).delete().addOnCompleteListener(runnable -> {
+                    if (runnable.isSuccessful()) {
+                        Toast.makeText(requireContext(), thisHist.getId(), Toast.LENGTH_SHORT).show();
+                        dialogInterface.cancel();
+                    }
+                });
+            }
+        });
+        builder.setNegativeButton("NO", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.cancel();
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
     }
 }

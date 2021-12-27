@@ -12,12 +12,10 @@ import androidx.fragment.app.Fragment;
 import com.hackerton.recording.R;
 
 
-public class DashboardFragment extends Fragment {
+public class UserFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
-
-        final TextView textView = view.findViewById(R.id.text_dashboard);
+        View view = inflater.inflate(R.layout.fragment_user, container, false);
         return view;
     }
 
