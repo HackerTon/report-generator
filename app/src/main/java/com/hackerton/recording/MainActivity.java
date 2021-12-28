@@ -23,7 +23,6 @@ public class MainActivity extends AppCompatActivity {
         view = getLayoutInflater().inflate(R.layout.activity_main, null, false);
         setContentView(view);
 
-
         BottomNavigationView navView = findViewById(R.id.nav_view);
         navView.setItemIconSize(74);
 
