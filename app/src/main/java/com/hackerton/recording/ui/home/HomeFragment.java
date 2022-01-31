@@ -3,15 +3,13 @@ package com.hackerton.recording.ui.home;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.BounceInterpolator;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -22,21 +20,21 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.firebase.Timestamp;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.hackerton.recording.Adapter;
+import com.hackerton.recording.Callback;
 import com.hackerton.recording.R;
+import com.hackerton.recording.entity.History;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.List;
 
-public class HomeFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener, View.OnClickListener {
+public class HomeFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener, View.OnClickListener, Callback {
     final private SimpleDateFormat format = new SimpleDateFormat("EEE, MMM d, yyyy");
     private ArrayList<History> historyList;
     private Adapter adapter;
     private SwipeRefreshLayout swipeView;
+    private HomePresenter mPresenter;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -52,11 +50,15 @@ public class HomeFragment extends Fragment implements SwipeRefreshLayout.OnRefre
             public void onAnimationEnd(Animator animation) {
                 NavController navController = Navigation.
                         findNavController(requireActivity(), R.id.nav_host_fragment_activity_main);
+
+                mPresenter.testWriteDummyHistory();
                 navController.navigate(R.id.action_navigation_home_to_navigation_create);
             }
         });
 
-        actionButton.setOnClickListener(thisview -> dropBounce.start());
+        actionButton.setOnClickListener(thisview -> {
+            dropBounce.start();
+        });
 
         final RecyclerView recyclerView = view.findViewById(R.id.recyclerview);
 
@@ -74,12 +76,26 @@ public class HomeFragment extends Fragment implements SwipeRefreshLayout.OnRefre
         });
 
         historyList = new ArrayList<>();
-        refreshHistory(false);
         adapter = new Adapter(historyList, this);
         recyclerView.setAdapter(adapter);
 
-
+        mPresenter = new HomePresenter(this);
+        mPresenter.fetchHistory();
         return view;
+    }
+
+    @Override
+    public void receive(Object response) {
+        List<History> histories = (List<History>) response;
+        historyList.clear();
+        historyList.addAll(histories);
+        adapter.notifyDataSetChanged();
+        swipeView.setRefreshing(false);
+    }
+
+    @Override
+    public void error(Object response) {
+
     }
 
     @Override
@@ -89,83 +105,28 @@ public class HomeFragment extends Fragment implements SwipeRefreshLayout.OnRefre
 
     @Override
     public void onRefresh() {
-        refreshHistory(true);
-    }
-
-    private String tohistString(ArrayList<Map<String, Object>> records) {
-        StringBuilder builder = new StringBuilder();
-
-        for (int i = 0; i != records.size(); i++) {
-            Map<String, Object> record = records.get(i);
-
-            String studentName = record.get("studentName").toString();
-            String studentLevel = record.get("level").toString();
-            String modelName = record.get("modelName").toString();
-            String studentProgress = record.get("progress").toString();
-
-            builder.append(i);
-            builder.append(". ");
-            builder.append(studentName);
-            builder.append(", Level ");
-            builder.append(studentLevel);
-            builder.append(" ");
-            builder.append(modelName);
-            builder.append(" ");
-            builder.append(studentProgress);
-            builder.append(" ");
-
-            builder.append('\n');
-        }
-
-        return builder.toString();
-    }
-
-
-    public void refreshHistory(boolean useswipeView) {
-        historyList.clear();
-        FirebaseFirestore.getInstance().collection("history").get().addOnCompleteListener(runnable -> {
-            if (runnable.isSuccessful()) {
-                for (QueryDocumentSnapshot document : runnable.getResult()) {
-                    final Timestamp timestamp = (Timestamp) document.getData().get("timecode");
-                    ArrayList<Map<String, Object>> records = (ArrayList<Map<String, Object>>) document.getData().get("record");
-                    historyList.add(new History(document.getId(), format.format(timestamp.toDate()), tohistString(records)));
-                }
-
-                if (useswipeView) {
-                    swipeView.setRefreshing(false);
-                }
-                adapter.notifyDataSetChanged();
-            }
-        });
+        mPresenter.fetchHistory();
     }
 
     @Override
     public void onClick(View view) {
-        Adapter.ViewHolder viewHolder = (Adapter.ViewHolder) view.getTag();
-        History thisHist = historyList.get(viewHolder.getAdapterPosition());
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setMessage("Your message");
-        builder.setCancelable(true);
-        builder.setPositiveButton("YES", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                FirebaseFirestore.getInstance().collection("history").document(thisHist.getId()).delete().addOnCompleteListener(runnable -> {
-                    if (runnable.isSuccessful()) {
-                        Toast.makeText(requireContext(), thisHist.getId(), Toast.LENGTH_SHORT).show();
-                        dialogInterface.cancel();
-                    }
-                });
-            }
-        });
-        builder.setNegativeButton("NO", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                dialogInterface.cancel();
-            }
-        });
-        AlertDialog dialog = builder.create();
-        dialog.show();
-
+//        Adapter.ViewHolder viewHolder = (Adapter.ViewHolder) view.getTag();
+//        History thisHist = historyList.get(viewHolder.getAdapterPosition());
+//
+//        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+//        builder.setMessage("Your message");
+//        builder.setCancelable(true);
+//        builder.setPositiveButton("YES", (dialogInterface, i) ->
+//                FirebaseFirestore.getInstance().collection("history").document(thisHist.getId()).delete().addOnCompleteListener(runnable -> {
+//            if (runnable.isSuccessful()) {
+//                Toast.makeText(requireContext(), thisHist.getId(), Toast.LENGTH_SHORT).show();
+//                dialogInterface.cancel();
+//            }
+//        }));
+//        builder.setNegativeButton("NO", (dialogInterface, i) -> dialogInterface.cancel());
+//        AlertDialog dialog = builder.create();
+//        dialog.show();
     }
+
+
 }
